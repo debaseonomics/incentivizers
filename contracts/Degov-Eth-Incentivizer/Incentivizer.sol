@@ -40,7 +40,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LPTokenWrapper {
@@ -77,7 +76,7 @@ contract LPTokenWrapper {
     }
 }
 
-contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
+contract Incentivizer is Ownable, LPTokenWrapper {
     using Address for address;
 
     event LogEmergencyWithdraw(uint256 number);
@@ -201,7 +200,7 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
         emit LogSetPoolLpLimit(poolLpLimit);
     }
 
-    function initialize(
+    constructor(
         address rewardToken_,
         address pairToken_,
         address policy_,
@@ -211,7 +210,7 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
         uint256 userLpLimit_,
         bool enablePoolLpLimit_,
         uint256 poolLpLimit_
-    ) public initializer {
+    ) public {
         setStakeToken(pairToken_);
         rewardToken = IERC20(rewardToken_);
         policy = policy_;
