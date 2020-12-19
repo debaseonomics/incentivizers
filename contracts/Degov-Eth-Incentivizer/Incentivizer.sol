@@ -81,7 +81,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
 
     event LogEmergencyWithdraw(uint256 number);
     event LogSetRewardPercentage(uint256 rewardPercentage_);
-    event LogSetDuration(uint256 duration_);
+    event LogSetBlockDuration(uint256 duration_);
     event LogSetPoolEnabled(bool poolEnabled_);
 
     event LogSetEnableUserLpLimit(bool enableUserLpLimit_);
@@ -97,7 +97,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
 
     IERC20 public rewardToken;
     address public policy;
-    uint256 public duration;
+    uint256 public blockDuration;
     bool public poolEnabled;
 
     uint256 public periodFinish;
@@ -146,10 +146,10 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     /**
      * @notice Function to set reward drop period
      */
-    function setDuration(uint256 duration_) external onlyOwner {
-        require(duration >= 1);
-        duration = duration_;
-        emit LogSetDuration(duration);
+    function setblockDuration(uint256 blockDuration_) external onlyOwner {
+        require(blockDuration >= 1);
+        blockDuration = blockDuration_;
+        emit LogSetBlockDuration(blockDuration);
     }
 
     /**
@@ -205,7 +205,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         address pairToken_,
         address policy_,
         uint256 rewardPercentage_,
-        uint256 duration_,
+        uint256 blockDuration_,
         bool enableUserLpLimit_,
         uint256 userLpLimit_,
         bool enablePoolLpLimit_,
@@ -215,7 +215,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         rewardToken = IERC20(rewardToken_);
         policy = policy_;
 
-        duration = duration_;
+        blockDuration = blockDuration_;
         rewardPercentage = rewardPercentage_;
 
         userLpLimit = userLpLimit_;
@@ -269,7 +269,9 @@ contract Incentivizer is Ownable, LPTokenWrapper {
             rewardPerTokenStored.add(
                 lastBlockRewardApplicable()
                     .sub(lastUpdateBlock)
-                    .mul(rewardToken.balanceOf(address(this)).div(duration))
+                    .mul(
+                    rewardToken.balanceOf(address(this)).div(blockDuration)
+                )
                     .mul(10**18)
                     .div(totalSupply())
             );
@@ -336,7 +338,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     {
         lastUpdateBlock = block.number;
         if (updatePeriod) {
-            periodFinish = block.number.add(duration);
+            periodFinish = block.number.add(blockDuration);
         }
     }
 }
