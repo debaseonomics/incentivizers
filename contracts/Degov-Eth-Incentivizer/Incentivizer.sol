@@ -80,7 +80,7 @@ contract LPTokenWrapper {
 contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
     using Address for address;
 
-    event LogEmergencyWithdraw(uint256 timestamp);
+    event LogEmergencyWithdraw(uint256 number);
     event LogSetRewardPercentage(uint256 rewardPercentage_);
     event LogSetDuration(uint256 duration_);
     event LogSetPoolEnabled(bool poolEnabled_);
@@ -103,7 +103,7 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
 
     uint256 public periodFinish;
     uint256 public rewardRate;
-    uint256 public lastUpdateTime;
+    uint256 public lastUpdateBlock;
     uint256 public rewardPerTokenStored;
     uint256 public rewardPercentage;
     uint256 public rewardDistributed;
@@ -128,7 +128,7 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
 
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = lastTimeRewardApplicable();
+        lastUpdateBlock = lastBlockRewardApplicable();
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;
@@ -236,7 +236,7 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
             "Only debase policy contract can call this"
         );
 
-        if (block.timestamp > periodFinish) {
+        if (block.number > periodFinish) {
             uint256 rewardToClaim = debasePolicyBalance
                 .mul(rewardPercentage)
                 .div(10**18);
@@ -255,11 +255,11 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
      */
     function emergencyWithdraw() external onlyOwner {
         rewardToken.safeTransfer(policy, rewardToken.balanceOf(address(this)));
-        emit LogEmergencyWithdraw(block.timestamp);
+        emit LogEmergencyWithdraw(block.number);
     }
 
-    function lastTimeRewardApplicable() public view returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
+    function lastBlockRewardApplicable() internal view returns (uint256) {
+        return Math.min(block.number, periodFinish);
     }
 
     function rewardPerToken() public view returns (uint256) {
@@ -268,8 +268,8 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
         }
         return
             rewardPerTokenStored.add(
-                lastTimeRewardApplicable()
-                    .sub(lastUpdateTime)
+                lastBlockRewardApplicable()
+                    .sub(lastUpdateBlock)
                     .mul(rewardToken.balanceOf(address(this)).div(duration))
                     .mul(10**18)
                     .div(totalSupply())
@@ -335,9 +335,9 @@ contract RandomizedCounter is Ownable, Initializable, LPTokenWrapper {
         internal
         updateReward(address(0))
     {
-        lastUpdateTime = block.timestamp;
+        lastUpdateBlock = block.number;
         if (updatePeriod) {
-            periodFinish = block.timestamp.add(duration);
+            periodFinish = block.number.add(duration);
         }
     }
 }
