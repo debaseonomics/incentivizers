@@ -95,7 +95,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     event LogWithdrawn(address indexed user, uint256 amount);
     event LogRewardPaid(address indexed user, uint256 reward);
 
-    IERC20 public rewardToken;
+    IERC20 public debase;
     address public policy;
     uint256 public blockDuration;
     bool public poolEnabled;
@@ -201,7 +201,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     }
 
     constructor(
-        address rewardToken_,
+        address debase_,
         address pairToken_,
         address policy_,
         uint256 rewardPercentage_,
@@ -212,7 +212,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         uint256 poolLpLimit_
     ) public {
         setStakeToken(pairToken_);
-        rewardToken = IERC20(rewardToken_);
+        debase = IERC20(debase_);
         policy = policy_;
 
         blockDuration = blockDuration_;
@@ -236,13 +236,13 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         );
 
         if (block.number > periodFinish) {
-            uint256 rewardToClaim = debasePolicyBalance
-                .mul(rewardPercentage)
-                .div(10**18);
+            uint256 rewardToClaim =
+                debasePolicyBalance.mul(rewardPercentage).div(10**18);
 
             if (debasePolicyBalance >= rewardToClaim) {
-                notifyRewardAmount(true);
-                emit LogRewardIssued(rewardPercentage, periodFinish);
+                startNewDistribtionCycle();
+
+                emit LogRewardIssued(rewardToClaim, periodFinish);
                 return rewardToClaim;
             }
         }
@@ -253,7 +253,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
      * @notice Function allows for emergency withdrawal of all reward tokens back into stabilizer fund
      */
     function emergencyWithdraw() external onlyOwner {
-        rewardToken.safeTransfer(policy, rewardToken.balanceOf(address(this)));
+        debase.safeTransfer(policy, debase.balanceOf(address(this)));
         emit LogEmergencyWithdraw(block.number);
     }
 
@@ -269,9 +269,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
             rewardPerTokenStored.add(
                 lastBlockRewardApplicable()
                     .sub(lastUpdateBlock)
-                    .mul(
-                    rewardToken.balanceOf(address(this)).div(blockDuration)
-                )
+                    .mul(rewardRate)
                     .mul(10**18)
                     .div(totalSupply())
             );
@@ -298,7 +296,11 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         );
         require(amount > 0, "Cannot stake 0");
         if (enableUserLpLimit) {
-            require(amount <= userLpLimit, "Can't stake more than lp limit");
+            uint256 userLpBalance = balanceOf(msg.sender);
+            require(
+                userLpBalance.add(amount) <= userLpLimit,
+                "Can't stake more than lp limit"
+            );
         }
         if (enablePoolLpLimit) {
             uint256 lpBalance = totalSupply();
@@ -326,19 +328,31 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            rewardToken.safeTransfer(msg.sender, reward);
-            emit LogRewardPaid(msg.sender, reward);
+
+            uint256 rewardToClaim =
+                debase.totalSupply().mul(reward).div(10**18);
+
+            debase.safeTransfer(msg.sender, rewardToClaim);
+
+            emit LogRewardPaid(msg.sender, rewardToClaim);
             rewardDistributed = rewardDistributed.add(reward);
         }
     }
 
-    function notifyRewardAmount(bool updatePeriod)
-        internal
-        updateReward(address(0))
-    {
-        lastUpdateBlock = block.number;
-        if (updatePeriod) {
-            periodFinish = block.number.add(blockDuration);
+    function startNewDistribtionCycle() internal updateReward(address(0)) {
+        uint256 poolTotalShare =
+            (debase.balanceOf(address(this)).div(debase.totalSupply())).mul(
+                10**18
+            );
+
+        if (block.timestamp >= periodFinish) {
+            rewardRate = poolTotalShare.div(blockDuration);
+        } else {
+            uint256 remaining = periodFinish.sub(block.timestamp);
+            uint256 leftover = remaining.mul(rewardRate);
+            rewardRate = poolTotalShare.add(leftover).div(blockDuration);
         }
+        lastUpdateBlock = block.timestamp;
+        periodFinish = block.timestamp.add(blockDuration);
     }
 }
