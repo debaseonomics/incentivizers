@@ -295,13 +295,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
             "Caller must not be a contract"
         );
         require(amount > 0, "Cannot stake 0");
-        if (enableUserLpLimit) {
-            uint256 userLpBalance = balanceOf(msg.sender);
-            require(
-                userLpBalance.add(amount) <= userLpLimit,
-                "Can't stake more than lp limit"
-            );
-        }
+
         if (enablePoolLpLimit) {
             uint256 lpBalance = totalSupply();
             require(
@@ -309,6 +303,14 @@ contract Incentivizer is Ownable, LPTokenWrapper {
                 "Can't stake pool lp limit reached"
             );
         }
+        if (enableUserLpLimit) {
+            uint256 userLpBalance = balanceOf(msg.sender);
+            require(
+                userLpBalance.add(amount) <= userLpLimit,
+                "Can't stake more than lp limit"
+            );
+        }
+
         super.stake(amount);
         emit LogStaked(msg.sender, amount);
     }
