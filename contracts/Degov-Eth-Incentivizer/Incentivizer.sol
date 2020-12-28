@@ -343,8 +343,8 @@ contract Incentivizer is Ownable, LPTokenWrapper {
 
     function startNewDistribtionCycle() internal updateReward(address(0)) {
         uint256 poolTotalShare =
-            (debase.balanceOf(address(this)).div(debase.totalSupply())).mul(
-                10**18
+            (debase.balanceOf(address(this)).mul(10**18)).div(
+                debase.totalSupply()
             );
 
         if (block.timestamp >= periodFinish) {
