@@ -76,7 +76,7 @@ describe('Degov/Eth Incentivizer', function() {
 			);
 		});
 
-		describe('Initial settings', function() {
+		describe('Initial settings check', function() {
 			it('Reward token should be debase', async function() {
 				expect(await incentivizer.debase()).eq(debase.address);
 			});
@@ -108,5 +108,138 @@ describe('Degov/Eth Incentivizer', function() {
 				expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
 			});
 		});
+	});
+
+	describe('Basic Operation', () => {
+		let incentivizer: Incentivizer;
+		let degovLP: Token;
+		let debase: Debase;
+		let address: string;
+
+		const duration = 4 * 24 * 60 * 60;
+		const userLpLimit = parseEther('10');
+		const userLpEnable = true;
+		const poolLpLimit = parseEther('100');
+		const poolLpEnable = true;
+		const rewardPercentage = parseUnits('1', 17);
+
+		describe('When Pool is disabled', () => {
+			before(async function() {
+				address = await accounts[0].getAddress();
+
+				debase = await debaseFactory.deploy();
+				degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+				incentivizer = await incentivizerFactory.deploy(
+					debase.address,
+					degovLP.address,
+					address,
+					rewardPercentage,
+					duration,
+					userLpEnable,
+					userLpLimit,
+					poolLpEnable,
+					poolLpLimit
+				);
+			});
+
+			it('Should not be able to stake', async function() {
+				await expect(incentivizer.stake(parseEther('10'))).to.be.reverted;
+			});
+			it('Should not be able to withdraw', async function() {
+				await expect(incentivizer.withdraw(parseEther('10'))).to.be.reverted;
+			});
+		});
+		describe('When Pool is enabled', () => {
+			describe('When pool is not rewarded balance', () => {
+				before(async function() {
+					address = await accounts[0].getAddress();
+
+					debase = await debaseFactory.deploy();
+					degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+					incentivizer = await incentivizerFactory.deploy(
+						debase.address,
+						degovLP.address,
+						address,
+						rewardPercentage,
+						duration,
+						userLpEnable,
+						userLpLimit,
+						poolLpEnable,
+						poolLpLimit
+					);
+
+					await incentivizer.setPoolEnabled(true);
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+				});
+				it('Should be enabled', async function() {
+					expect(await incentivizer.poolEnabled()).to.be.true;
+				});
+				it('Should be able to stake', async function() {
+					expect(await incentivizer.stake(parseEther('10')));
+				});
+				it('Should be able to withdraw', async function() {
+					expect(await incentivizer.withdraw(parseEther('10')));
+				});
+				it('Should not earn rewards', async function() {
+					expect(await incentivizer.earned(address)).eq(0);
+				});
+			});
+
+			describe('When pool is rewarded balance', () => {
+				describe('For a single user', () => {
+					before(async function() {
+						address = await accounts[0].getAddress();
+
+						debase = await debaseFactory.deploy();
+						degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+						incentivizer = await incentivizerFactory.deploy(
+							debase.address,
+							degovLP.address,
+							address,
+							rewardPercentage,
+							duration,
+							userLpEnable,
+							userLpLimit,
+							poolLpEnable,
+							poolLpLimit
+						);
+
+						await incentivizer.setPoolEnabled(true);
+						await degovLP.approve(incentivizer.address, parseEther('10'));
+						await incentivizer.checkStabilizerAndGetReward(1, 1, 1, parseEther('100'));
+						await debase.transfer(incentivizer.address, parseEther('100'));
+					});
+					it('Should be able to stake', async function() {
+						expect(await incentivizer.stake(parseEther('10')));
+					});
+					it('Should be able to withdraw', async function() {
+						expect(await incentivizer.withdraw(parseEther('10')));
+					});
+					it('Should earn rewards', async function() {
+						expect(await incentivizer.earned(address)).not.eq(0);
+					});
+				});
+
+				describe('For multiple users', () => {
+					it('Should be able to stake', async function() {
+						expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
+					});
+					it('Should be able to withdraw', async function() {
+						expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
+					});
+					it('Should not earn rewards', async function() {
+						expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
+					});
+				});
+			});
+		});
+	});
+	describe('Operation Under Rebases', () => {
+		describe('Positive Rebase', () => {});
+		describe('Neutral Rebase', () => {});
+		describe('Negative Rebase', () => {});
 	});
 });

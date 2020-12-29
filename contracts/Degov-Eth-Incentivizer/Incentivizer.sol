@@ -41,6 +41,7 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 contract LPTokenWrapper {
     using SafeMath for uint256;
@@ -240,7 +241,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
                 debasePolicyBalance.mul(rewardPercentage).div(10**18);
 
             if (debasePolicyBalance >= rewardToClaim) {
-                startNewDistribtionCycle();
+                startNewDistribtionCycle(rewardToClaim);
 
                 emit LogRewardIssued(rewardToClaim, periodFinish);
                 return rewardToClaim;
@@ -341,11 +342,13 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         }
     }
 
-    function startNewDistribtionCycle() internal updateReward(address(0)) {
-        uint256 poolTotalShare =
-            (debase.balanceOf(address(this)).mul(10**18)).div(
-                debase.totalSupply()
-            );
+    function startNewDistribtionCycle(uint256 amount)
+        internal
+        updateReward(address(0))
+    {
+        uint256 poolTotalShare = amount.mul(10**18).div(debase.totalSupply());
+
+        console.log("Pool Share", poolTotalShare);
 
         if (block.timestamp >= periodFinish) {
             rewardRate = poolTotalShare.div(blockDuration);

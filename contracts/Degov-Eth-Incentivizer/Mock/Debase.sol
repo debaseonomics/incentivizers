@@ -73,14 +73,7 @@ contract Debase is ERC20, Initializable {
     // it's fully paid.
     mapping(address => mapping(address => uint256)) private _allowedFragments;
 
-    constructor() public ERC20("Debase", "DEBASE") {}
-
-    /**
-     * @notice Initializes with the policy,Dai,DaiLp pool as parameters. 
-               The function then sets the total supply to the initial supply and calculates the gon per fragment. 
-               It also sets the value and the gons for both the Dai and DaiLp reward pools.
-     */
-    function initialize() external initializer {
+    constructor() public ERC20("Debase", "DEBASE") {
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
 
