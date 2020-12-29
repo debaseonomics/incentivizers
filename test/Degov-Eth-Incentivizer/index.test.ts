@@ -16,7 +16,7 @@ import { Debase } from '../../typechain/Debase';
 
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 
-describe('Randomized Threshold Counter', function() {
+describe('Degov/Eth Incentivizer', function() {
 	let accounts: Signer[];
 	let incentivizerFactory: IncentivizerFactory;
 	let tokenFactory: TokenFactory;
@@ -50,7 +50,6 @@ describe('Randomized Threshold Counter', function() {
 		let debase: Debase;
 		let address: string;
 
-		const rewardAmount = parseEther('100');
 		const duration = 4 * 24 * 60 * 60;
 		const userLpLimit = parseEther('10');
 		const userLpEnable = true;
@@ -78,24 +77,35 @@ describe('Randomized Threshold Counter', function() {
 		});
 
 		describe('Initial settings', function() {
-			it('Counter reward token should be debase', async function() {
+			it('Reward token should be debase', async function() {
 				expect(await incentivizer.debase()).eq(debase.address);
 			});
-
-			it('Counter pair token should be degov lp', async function() {
+			it('Pair token should be degov lp', async function() {
 				expect(await incentivizer.y()).eq(degovLP.address);
 			});
-
-			it('Counter policy should be policy contract', async function() {
+			it('Policy should be policy contract', async function() {
 				expect(await incentivizer.policy()).eq(address);
 			});
-
-			it('Counter duration should be correct', async function() {
+			it('Duration should be correct', async function() {
 				expect(await incentivizer.blockDuration()).eq(duration);
 			});
-
-			it('Counter pool should be disabled', async function() {
+			it('eward Percentage should be correct', async function() {
+				expect(await incentivizer.rewardPercentage()).eq(rewardPercentage);
+			});
+			it('Pool should be  disabled', async function() {
 				expect(await incentivizer.poolEnabled()).false;
+			});
+			it('User lp limit should be enabled', async function() {
+				expect(await incentivizer.enableUserLpLimit()).eq(userLpEnable);
+			});
+			it('User lp limit should be correct', async function() {
+				expect(await incentivizer.userLpLimit()).eq(userLpLimit);
+			});
+			it('Pool lp limit should be enabled', async function() {
+				expect(await incentivizer.enablePoolLpLimit()).eq(poolLpEnable);
+			});
+			it('Pool lp limit should be correct', async function() {
+				expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
 			});
 		});
 	});
