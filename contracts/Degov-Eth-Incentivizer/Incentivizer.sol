@@ -242,7 +242,6 @@ contract Incentivizer is Ownable, LPTokenWrapper {
 
             if (debasePolicyBalance >= rewardToClaim) {
                 startNewDistribtionCycle(rewardToClaim);
-
                 emit LogRewardIssued(rewardToClaim, periodFinish);
                 return rewardToClaim;
             }
@@ -263,6 +262,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     }
 
     function rewardPerToken() public view returns (uint256) {
+
         if (totalSupply() == 0) {
             return rewardPerTokenStored;
         }
@@ -348,16 +348,14 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     {
         uint256 poolTotalShare = amount.mul(10**18).div(debase.totalSupply());
 
-        console.log("Pool Share", poolTotalShare);
-
-        if (block.timestamp >= periodFinish) {
+        if (block.number >= periodFinish) {
             rewardRate = poolTotalShare.div(blockDuration);
         } else {
-            uint256 remaining = periodFinish.sub(block.timestamp);
+            uint256 remaining = periodFinish.sub(block.number);
             uint256 leftover = remaining.mul(rewardRate);
             rewardRate = poolTotalShare.add(leftover).div(blockDuration);
         }
-        lastUpdateBlock = block.timestamp;
-        periodFinish = block.timestamp.add(blockDuration);
+        lastUpdateBlock = block.number;
+        periodFinish = block.number.add(blockDuration);
     }
 }
