@@ -283,14 +283,9 @@ describe('Degov/Eth Incentivizer', function() {
 							expect(await incentivizer.earned(address)).eq(rewardRate);
 						});
 						it('Should transfer correct amount of debase on get reward', async function() {
-							let rewardToRewarded = (await incentivizer.rewardRate())
-								.mul(2)
-								.mul(await debase.totalSupply())
-								.div(parseEther('1'));
-
 							await expect(incentivizer.getReward()).to
 								.emit(incentivizer, 'LogRewardPaid')
-								.withArgs(address, rewardToRewarded);
+								.withArgs(address, parseEther('100').mul(rewardPercentage).div(parseEther('1')));
 						});
 					});
 				});
@@ -310,8 +305,206 @@ describe('Degov/Eth Incentivizer', function() {
 		});
 	});
 	describe('Operation Under Rebases', () => {
-		describe('Positive Rebase', () => {});
-		describe('Neutral Rebase', () => {});
-		describe('Negative Rebase', () => {});
+		let incentivizer: Incentivizer;
+		let degovLP: Token;
+		let debase: Debase;
+		let address: string;
+
+		let duration = 10;
+		let rewardRateBefore: any;
+		const userLpLimit = parseEther('10');
+		const userLpEnable = true;
+		const poolLpLimit = parseEther('100');
+		const poolLpEnable = true;
+		const rewardPercentage = parseUnits('1', 17);
+
+		describe('Simple Operation', () => {
+			describe('Positive Rebase', () => {
+				before(async function() {
+					address = await accounts[0].getAddress();
+
+					debase = await debaseFactory.deploy();
+					degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+					incentivizer = await incentivizerFactory.deploy(
+						debase.address,
+						degovLP.address,
+						address,
+						rewardPercentage,
+						duration,
+						userLpEnable,
+						userLpLimit,
+						poolLpEnable,
+						poolLpLimit
+					);
+
+					await incentivizer.setPoolEnabled(true);
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+					await incentivizer.checkStabilizerAndGetReward(1, 1, 1, parseEther('100'));
+					await debase.transfer(
+						incentivizer.address,
+						parseEther('100').mul(rewardPercentage).div(parseEther('1'))
+					);
+					rewardRateBefore = await incentivizer.rewardRate();
+					await debase.rebase(1, parseEther('10000'));
+				});
+
+				it('Its reward Rate should not change after rebase', async function() {
+					expect(await incentivizer.rewardRate()).to.eq(rewardRateBefore);
+				});
+				it('Should be able to stake', async function() {
+					expect(await incentivizer.stake(parseEther('10')));
+				});
+				it('Should be able to withdraw', async function() {
+					expect(await incentivizer.withdraw(parseEther('10')));
+				});
+				it('Should earn rewards', async function() {
+					expect(await incentivizer.earned(address)).not.eq(0);
+				});
+				it('Should emit a transfer event when rewards are claimed', async function() {
+					await expect(incentivizer.getReward()).to.emit(debase, 'Transfer');
+				});
+			});
+			describe('Negative Rebase', () => {
+				before(async function() {
+					address = await accounts[0].getAddress();
+
+					debase = await debaseFactory.deploy();
+					degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+					incentivizer = await incentivizerFactory.deploy(
+						debase.address,
+						degovLP.address,
+						address,
+						rewardPercentage,
+						duration,
+						userLpEnable,
+						userLpLimit,
+						poolLpEnable,
+						poolLpLimit
+					);
+
+					await incentivizer.setPoolEnabled(true);
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+					await incentivizer.checkStabilizerAndGetReward(1, 1, 1, parseEther('100'));
+					await debase.transfer(
+						incentivizer.address,
+						parseEther('100').mul(rewardPercentage).div(parseEther('1'))
+					);
+					rewardRateBefore = await incentivizer.rewardRate();
+					await debase.rebase(1, parseEther('10000').mul(-1));
+				});
+				it('Its reward Rate should not change after rebase', async function() {
+					expect(await incentivizer.rewardRate()).to.eq(rewardRateBefore);
+				});
+				it('Should be able to stake', async function() {
+					expect(await incentivizer.stake(parseEther('10')));
+				});
+				it('Should be able to withdraw', async function() {
+					expect(await incentivizer.withdraw(parseEther('10')));
+				});
+				it('Should earn rewards', async function() {
+					expect(await incentivizer.earned(address)).not.eq(0);
+				});
+				it('Should emit a transfer event when rewards are claimed', async function() {
+					await expect(incentivizer.getReward()).to.emit(debase, 'Transfer');
+				});
+			});
+		});
+
+		describe('Claim maximum Balance', () => {
+			describe('Positive Rebase', () => {
+				before(async function() {
+					address = await accounts[0].getAddress();
+
+					debase = await debaseFactory.deploy();
+					degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+					incentivizer = await incentivizerFactory.deploy(
+						debase.address,
+						degovLP.address,
+						address,
+						rewardPercentage,
+						2,
+						userLpEnable,
+						userLpLimit,
+						poolLpEnable,
+						poolLpLimit
+					);
+
+					await incentivizer.setPoolEnabled(true);
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+					await incentivizer.stake(parseEther('10'));
+					await incentivizer.checkStabilizerAndGetReward(1, 1, 1, parseEther('100'));
+					await debase.transfer(
+						incentivizer.address,
+						parseEther('100').mul(rewardPercentage).div(parseEther('1'))
+					);
+					rewardRateBefore = await incentivizer.rewardRate();
+					await debase.rebase(1, parseEther('10000'));
+
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+				});
+				it('Should have claimable % equal to % of debase sent after reward period has elapsed', async function() {
+					let totalReward = rewardRateBefore.mul(2);
+					expect(await incentivizer.earned(address)).eq(totalReward);
+				});
+				it('Pool balance should be zero after get reward', async function() {
+					console.log(await debase.balanceOf(incentivizer.address));
+					await incentivizer.getReward();
+					expect(await debase.balanceOf(incentivizer.address)).eq(0);
+				});
+			});
+			describe('Negative Rebase', () => {
+				before(async function() {
+					address = await accounts[0].getAddress();
+
+					debase = await debaseFactory.deploy();
+					degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+
+					incentivizer = await incentivizerFactory.deploy(
+						debase.address,
+						degovLP.address,
+						address,
+						rewardPercentage,
+						2,
+						userLpEnable,
+						userLpLimit,
+						poolLpEnable,
+						poolLpLimit
+					);
+
+					await incentivizer.setPoolEnabled(true);
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+					await incentivizer.stake(parseEther('10'));
+					await incentivizer.checkStabilizerAndGetReward(1, 1, 1, parseEther('100'));
+					await debase.transfer(
+						incentivizer.address,
+						parseEther('100').mul(rewardPercentage).div(parseEther('1'))
+					);
+					rewardRateBefore = await incentivizer.rewardRate();
+					await debase.rebase(1, parseEther('10000').mul(-1));
+
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+
+					await degovLP.approve(incentivizer.address, parseEther('10'));
+				});
+				it('Should have claimable % equal to % of debase sent after reward period has elapsed', async function() {
+					let totalReward = rewardRateBefore.mul(2);
+					expect(await incentivizer.earned(address)).eq(totalReward);
+				});
+				it('Pool balance should be zero after get reward', async function() {
+					console.log(await debase.balanceOf(incentivizer.address));
+					await incentivizer.getReward();
+					expect(await debase.balanceOf(incentivizer.address)).eq(0);
+				});
+			});
+		});
 	});
 });
