@@ -289,18 +289,6 @@ describe('Degov/Eth Incentivizer', function() {
 						});
 					});
 				});
-
-				// describe('For multiple users', () => {
-				// 	it('Should be able to stake', async function() {
-				// 		expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
-				// 	});
-				// 	it('Should be able to withdraw', async function() {
-				// 		expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
-				// 	});
-				// 	it('Should not earn rewards', async function() {
-				// 		expect(await incentivizer.poolLpLimit()).eq(poolLpLimit);
-				// 	});
-				// });
 			});
 		});
 	});
@@ -454,7 +442,6 @@ describe('Degov/Eth Incentivizer', function() {
 					expect(await incentivizer.earned(address)).eq(totalReward);
 				});
 				it('Pool balance should be zero after get reward', async function() {
-					console.log(await debase.balanceOf(incentivizer.address));
 					await incentivizer.getReward();
 					expect(await debase.balanceOf(incentivizer.address)).eq(0);
 				});
@@ -500,7 +487,6 @@ describe('Degov/Eth Incentivizer', function() {
 					expect(await incentivizer.earned(address)).eq(totalReward);
 				});
 				it('Pool balance should be zero after get reward', async function() {
-					console.log(await debase.balanceOf(incentivizer.address));
 					await incentivizer.getReward();
 					expect(await debase.balanceOf(incentivizer.address)).eq(0);
 				});

@@ -41,6 +41,7 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 contract LPTokenWrapper {
@@ -77,7 +78,7 @@ contract LPTokenWrapper {
     }
 }
 
-contract Incentivizer is Ownable, LPTokenWrapper {
+contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
     using Address for address;
 
     event LogEmergencyWithdraw(uint256 number);
@@ -262,7 +263,6 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     }
 
     function rewardPerToken() public view returns (uint256) {
-
         if (totalSupply() == 0) {
             return rewardPerTokenStored;
         }
@@ -288,6 +288,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
     function stake(uint256 amount)
         public
         override
+        nonReentrant
         updateReward(msg.sender)
         enabled
     {
@@ -316,7 +317,12 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         emit LogStaked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) public override updateReward(msg.sender) {
+    function withdraw(uint256 amount)
+        public
+        override
+        nonReentrant
+        updateReward(msg.sender)
+    {
         require(amount > 0, "Cannot withdraw 0");
         super.withdraw(amount);
         emit LogWithdrawn(msg.sender, amount);
@@ -327,7 +333,7 @@ contract Incentivizer is Ownable, LPTokenWrapper {
         getReward();
     }
 
-    function getReward() public updateReward(msg.sender) enabled {
+    function getReward() public nonReentrant updateReward(msg.sender) enabled {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
