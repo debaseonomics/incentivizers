@@ -85,6 +85,11 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
     event LogSetRewardPercentage(uint256 rewardPercentage_);
     event LogSetBlockDuration(uint256 duration_);
     event LogSetPoolEnabled(bool poolEnabled_);
+    event LogStartNewDistribtionCycle(
+        uint256 poolShareAdded_,
+        uint256 rewardRate_,
+        uint256 periodFinish_
+    );
 
     event LogSetEnableUserLpLimit(bool enableUserLpLimit_);
     event LogSetEnablePoolLpLimit(bool enablePoolLpLimit_);
@@ -363,5 +368,11 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
         }
         lastUpdateBlock = block.number;
         periodFinish = block.number.add(blockDuration);
+
+        emit LogStartNewDistribtionCycle(
+            poolTotalShare,
+            rewardRate,
+            periodFinish
+        );
     }
 }
