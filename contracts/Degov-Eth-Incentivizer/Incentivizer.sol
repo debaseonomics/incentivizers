@@ -87,6 +87,7 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
     event LogSetPoolEnabled(bool poolEnabled_);
     event LogStartNewDistribtionCycle(
         uint256 poolShareAdded_,
+        uint256 amount_,
         uint256 rewardRate_,
         uint256 periodFinish_
     );
@@ -97,7 +98,6 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
     event LogSetPoolLpLimit(uint256 poolLpLimit_);
 
     event LogRewardAdded(uint256 reward);
-    event LogRewardIssued(uint256 rewardIssued, uint256 rewardsFinishBy);
     event LogStaked(address indexed user, uint256 amount);
     event LogWithdrawn(address indexed user, uint256 amount);
     event LogRewardPaid(address indexed user, uint256 reward);
@@ -181,7 +181,7 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
     function setUserLpLimit(uint256 userLpLimit_) external onlyOwner {
         require(
             userLpLimit_ <= poolLpLimit,
-            "User lp limit can't be more than pool limit"
+            "User lp limit cant be more than pool limit"
         );
         userLpLimit = userLpLimit_;
         emit LogSetUserLpLimit(userLpLimit);
@@ -201,7 +201,7 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
     function setPoolLpLimit(uint256 poolLpLimit_) external onlyOwner {
         require(
             poolLpLimit_ >= userLpLimit,
-            "Pool lp limit can't be less than user lp limit"
+            "Pool lp limit cant be less than user lp limit"
         );
         poolLpLimit = poolLpLimit_;
         emit LogSetPoolLpLimit(poolLpLimit);
@@ -248,7 +248,6 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
 
             if (debasePolicyBalance >= rewardToClaim) {
                 startNewDistribtionCycle(rewardToClaim);
-                emit LogRewardIssued(rewardToClaim, periodFinish);
                 return rewardToClaim;
             }
         }
@@ -307,14 +306,14 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
             uint256 lpBalance = totalSupply();
             require(
                 amount.add(lpBalance) <= poolLpLimit,
-                "Can't stake pool lp limit reached"
+                "Cant stake pool lp limit reached"
             );
         }
         if (enableUserLpLimit) {
             uint256 userLpBalance = balanceOf(msg.sender);
             require(
                 userLpBalance.add(amount) <= userLpLimit,
-                "Can't stake more than lp limit"
+                "Cant stake more than lp limit"
             );
         }
 
@@ -371,6 +370,7 @@ contract Incentivizer is Ownable, LPTokenWrapper, ReentrancyGuard {
 
         emit LogStartNewDistribtionCycle(
             poolTotalShare,
+            amount,
             rewardRate,
             periodFinish
         );

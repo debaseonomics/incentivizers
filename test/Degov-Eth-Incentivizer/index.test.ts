@@ -115,13 +115,58 @@ describe('Degov/Eth Incentivizer', function() {
 		let degovLP: Token;
 		let debase: Debase;
 		let address: string;
+		let degovLpUser2: Token;
+		let incentivizer2: Incentivizer;
 
 		let duration = 10;
 		const userLpLimit = parseEther('10');
 		const userLpEnable = true;
-		const poolLpLimit = parseEther('100');
+		const poolLpLimit = parseEther('15');
 		const poolLpEnable = true;
 		const rewardPercentage = parseUnits('1', 17);
+
+		describe('User/Pool Lp Limits', () => {
+			before(async function() {
+				address = await accounts[0].getAddress();
+				let address2 = await accounts[1].getAddress();
+
+				debase = await debaseFactory.deploy();
+				degovLP = await tokenFactory.deploy('DEGOVLP', 'DEGOVLP');
+				degovLpUser2 = await degovLP.connect(accounts[1]);
+
+				await degovLP.transfer(address2, parseEther('20'));
+
+				incentivizer = await incentivizerFactory.deploy(
+					debase.address,
+					degovLP.address,
+					address,
+					rewardPercentage,
+					duration,
+					userLpEnable,
+					userLpLimit,
+					poolLpEnable,
+					poolLpLimit
+				);
+
+				incentivizer2 = await incentivizer.connect(accounts[1]);
+
+				await incentivizer.setPoolEnabled(true);
+				await degovLP.approve(incentivizer.address, parseEther('20'));
+				await degovLpUser2.approve(incentivizer.address, parseEther('20'));
+			});
+			it('User cant stake more than user lp limit once', async function() {
+				await expect(incentivizer.stake(parseEther('11'))).to.be.revertedWith('Cant stake more than lp limit');
+			});
+			it('User cant stake more than user lp limit when combined with previous user stakes', async function() {
+				await incentivizer.stake(parseEther('6'));
+				await expect(incentivizer.stake(parseEther('5'))).to.be.revertedWith('Cant stake more than lp limit');
+			});
+			it('Users cant stake more pool lp limit', async function() {
+				await expect(incentivizer2.stake(parseEther('10'))).to.be.revertedWith(
+					'Cant stake pool lp limit reached'
+				);
+			});
+		});
 
 		describe('When Pool is disabled', () => {
 			before(async function() {
@@ -141,6 +186,7 @@ describe('Degov/Eth Incentivizer', function() {
 					poolLpEnable,
 					poolLpLimit
 				);
+				await degovLP.approve(incentivizer.address, parseEther('10'));
 			});
 
 			it('Should not be able to stake', async function() {
@@ -215,9 +261,18 @@ describe('Degov/Eth Incentivizer', function() {
 							await degovLP.approve(incentivizer.address, parseEther('10'));
 						});
 						it('Should claim reward with correct amount', async function() {
+							let reward = parseEther('100').mul(rewardPercentage).div(parseEther('1'));
+							let share = reward.mul(parseEther('1')).div(await debase.totalSupply());
+							let rewardRate = share.div(duration);
+
 							await expect(incentivizer.checkStabilizerAndGetReward(1, 1, 1, parseEther('100'))).to
-								.emit(incentivizer, 'LogRewardIssued')
-								.withArgs(parseEther('100').mul(rewardPercentage).div(parseEther('1')), 29);
+								.emit(incentivizer, 'LogStartNewDistribtionCycle')
+								.withArgs(
+									share,
+									reward,
+									rewardRate,
+									(await incentivizer.lastUpdateBlock()).add(duration)
+								);
 						});
 						it('Its reward Rate should be correct', async function() {
 							await debase.transfer(
