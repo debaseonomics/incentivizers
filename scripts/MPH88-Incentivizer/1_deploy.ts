@@ -26,7 +26,7 @@ async function main() {
 		const lockPeriod = 2592000;
 		const daiFee = 30;
 		const mphFee = 30;
-		const treasury = '';
+		const treasury = '0xf038C1cfaDAce2C0E5963Ab5C0794B9575e1D2c2';
 		const debaseRewardPercentage = '500000000000000';
 		const blockDuration = 23200;
 		const uniFactory = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
