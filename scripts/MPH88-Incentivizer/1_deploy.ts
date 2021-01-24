@@ -20,7 +20,7 @@ async function main() {
 		const debaseDaiPair = '0xE98f89a2B3AeCDBE2118202826478Eb02434459A';
 		const mph = '0x8888801aF4d980682e47f1A9036e589479e835C5';
 		const policy = '0x989Edd2e87B1706AB25b2E8d9D9480DE3Cc383eD';
-		const daiFixedPool = '0x35966201A7724b952455B73A36C8846D8745218e';
+		const daiFixedPool = '0xDC86AC6140026267E0873B27c8629eFE748E7146';
 		const mphStakingPool = '0x98df8D9E56b51e4Ea8AA9b57F8A5Df7A044234e1';
 		const mphVesting = '0x8943eb8F104bCf826910e7d2f4D59edfe018e0e7';
 		const lockPeriod = 2592000;
@@ -28,7 +28,7 @@ async function main() {
 		const mphFee = 30;
 		const treasury = '0xf038C1cfaDAce2C0E5963Ab5C0794B9575e1D2c2';
 		const debaseRewardPercentage = '500000000000000';
-		const blockDuration = 23200;
+		const blockDuration = 6500;
 		const uniFactory = '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f';
 		const uniRoute02 = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
 		const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
