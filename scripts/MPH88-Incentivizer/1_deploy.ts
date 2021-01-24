@@ -1,5 +1,6 @@
 import { parseEther, parseUnits } from 'ethers/lib/utils';
 import { run, ethers } from 'hardhat';
+import { parse } from 'path';
 
 import DaiLpPoolArtifact from '../../artifacts/contracts/MPH88-Incentivizer/DaiLpPool.sol/DaiLpPool.json';
 import { DaiLpPoolFactory } from '../../typechain/DaiLpPoolFactory';
@@ -47,6 +48,12 @@ async function main() {
 			debaseRewardPercentage,
 			blockDuration
 		);
+
+		await daiLpPool.setTotalLpLimitEnabled(true)
+		await daiLpPool.setMaxDepositLimitEnabled(true)
+
+		await daiLpPool.setTotalLpLimit(parseEther("25000"))
+		await daiLpPool.setMaxDepositLimit("2000")
 
 		console.log(daiLpPool.address);
 	} catch (error) {}
