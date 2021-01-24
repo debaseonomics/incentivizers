@@ -53,7 +53,7 @@ async function main() {
 		await daiLpPool.setMaxDepositLimitEnabled(true)
 
 		await daiLpPool.setTotalLpLimit(parseEther("25000"))
-		await daiLpPool.setMaxDepositLimit("2000")
+		await daiLpPool.setMaxDepositLimit(parseEther("2000"))
 
 		console.log(daiLpPool.address);
 	} catch (error) {}
